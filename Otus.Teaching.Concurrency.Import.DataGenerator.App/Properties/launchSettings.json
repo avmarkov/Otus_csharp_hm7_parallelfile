@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Otus.Teaching.Concurrency.Import.DataGenerator.App": {
+      "commandName": "Project",
+      "commandLineArgs": "hhhh"
+    }
+  }
+}
