@@ -15,6 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otus.Teaching.Concurrency.I
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{972BF43A-6F5A-4514-A6FD-6D68BB4C45F4}"
 	ProjectSection(SolutionItems) = preProject
+		images\db.png = images\db.png
 		README.md = README.md
 		images\result.png = images\result.png
 	EndProjectSection
