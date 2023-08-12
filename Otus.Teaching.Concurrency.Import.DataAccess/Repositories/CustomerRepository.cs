@@ -17,7 +17,10 @@ namespace Otus.Teaching.Concurrency.Import.DataAccess.Repositories
         {
             //Add customer to data source
             if (customer != null)
+            {
                 _dbSet.Add(customer);
+               
+            }
         }
 
         public void Clear()

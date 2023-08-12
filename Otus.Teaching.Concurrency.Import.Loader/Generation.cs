@@ -27,14 +27,12 @@ namespace Otus.Teaching.Concurrency.Import.Loader
 
         public void GenerationInProccess()
         {
-            var process = new Process();
-            Console.WriteLine($"Generation in process. process.Id = {process.Id}...");
+            var process = new Process();         
             
-            process.StartInfo.FileName = programmName;
-            process.StartInfo.Arguments = "\"" + Path.GetFileNameWithoutExtension(fileName) + "\" " + dataCount.ToString();
+            process.StartInfo.FileName = programmName;           
+            process.StartInfo.Arguments = "\"" + fileName + "\" " + dataCount.ToString();
             process.Start();
+            Console.WriteLine($"Generation in process. process.Id = {process.Id}...");
         }
-
-
     }
 }

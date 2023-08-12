@@ -30,7 +30,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader
                 }
             }
 
-            Generation generation = new Generation(_dataFilePath, _dataFileName, _numberRows);
+            Generation generation = new Generation(_generatorPath, _dataFilePath, _numberRows);
 
             if (_genType =="M")
             {
@@ -41,15 +41,8 @@ namespace Otus.Teaching.Concurrency.Import.Loader
             {
                 generation.GenerationInProccess();
             }
-
-            // Console.WriteLine($"Loader started with process Id {Process.GetCurrentProcess().Id}...");
-
-            // GenerateCustomersDataFile();
-
-            // var loader = new FakeDataLoader();
-
-            // loader.LoadData();
-            var loader = new MyDataLoader(_dataFileName);
+           
+            var loader = new MyDataLoader(_dataFilePath, _dbConfig, _threadCount);
             loader.LoadData();  
         }
 

@@ -28,7 +28,8 @@ namespace Otus.Teaching.Concurrency.Import.XmlGenerator
         {
             if (args != null && args.Length > 0)
             {
-                _dataFileName = Path.Combine(_dataFileDirectory, $"{args[0]}.xml");
+                //_dataFileName = Path.Combine(_dataFileDirectory, $"{args[0]}.xml");
+                _dataFileName = args[0];
             }
             else
             {

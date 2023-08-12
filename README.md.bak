@@ -28,56 +28,34 @@
 5. По желанию дать обратную связь по 1-му домашнему заданию других студентов на курсе, можно найти репозитории по форкам к этому репозиторию. Обратную связь можно описать, создав issue к репозиторию, например, 
 https://gitlab.com/devgrav/Otus.Teaching.Concurrency.Queue/issues/1. Чтобы обратная связь была качественной обязательно нужно похвалить работу, написав, что сделано хорошо и написать, что можно улучшить с пояснениями почему это сделает работу более качественной. Эти рекомендации работают и для code review, так как позволяют более конструктивно обсуждать коммиты.
 
+Некоторые вещи можно посмотреть в проекте, который был рассмотрен на занятии:
+https://gitlab.com/devgrav/Otus.Teaching.Concurrency.Queue
 
-### Решение
-1. Запуск генератора файла через создание процесса, сделать возможность выбора в коде, как запускать генератор, процессом или через вызов метода.
+### Оценка 
+1. 2 балла
+2. 3 балла
+3. 2 балла
+4. 2 балла
+5. 1 балл
 
-Сделал класс Generation. С двумя методами GenerationInMethod - генерация файла через вызов метода, GenerationInProccess генерация с помощью процесса:
-```cs
-public class Generation
-{
-    private string fileName;
-    private int dataCount;
-    private string programmName;
+Всего 10 баллов, для приема задания достаточно 7 баллов.
 
-    public Generation(string programmName, string fileName, int dataCount)
-    {
-        this.programmName = programmName;
-        this.fileName = fileName;
-        this.dataCount = dataCount;
-    }
+### Otus.Teaching.Concurrency.Import.Loader
 
-    public void GenerationInMethod()
-    {
-        Console.WriteLine($"Generation in method...");
-        var xmlGenerator = new XmlGenerator(fileName, dataCount);           
-        xmlGenerator.Generate();
-    }
+Консольное приложение, которое должно сгенирировать файл с данными и запустить загрузку из него через реализацию `IDataLoader`.
 
-    public void GenerationInProccess()
-    {
-        var process = new Process();         
-            
-        process.StartInfo.FileName = programmName;           
-        process.StartInfo.Arguments = "\"" + fileName + "\" " + dataCount.ToString();
-        process.Start();
-        Console.WriteLine($"Generation in process. process.Id = {process.Id}...");
-    }
-}
-```
+### Otus.Teaching.Concurrency.Import.DataGenerator
 
-Вызов в зависимости от параметров командной строки такой:
-```cs
-if (_genType =="M")
-{
-    generation.GenerationInMethod();
-}
+Библиотека, в которой должна определена логика генерации файла с данными, в базовом варианте это XML.
 
-if (_genType == "P")
-{
-    generation.GenerationInProccess();
-}      
-```
+### Otus.Teaching.Concurrency.Import.DataGenerator.App
 
-2. Распараллеливаем обработку файла по набору диапазонов Id
+Консольное приложение, которое позволяет при запуске отдельно выполнить генерацию файла из `DataGenerator` библиотеки.
 
+### Otus.Teaching.Concurrency.Import.DataAccess
+
+Библиотека, в которой находится доступ к базе данных и файлу с данными.
+
+### Otus.Teaching.Concurrency.Import.Core
+
+Библиотека, в которой определены сущности БД и основные интерфейсы, которые реализуют другие компоненты.
