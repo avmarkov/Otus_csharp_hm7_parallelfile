@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Otus.Teaching.Concurrency.Import.Loader": {
+      "commandName": "Project",
+      "commandLineArgs": "M"
+    }
+  }
+}

@@ -8,11 +8,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Otus.Teaching.Concurrency.Import.Core\Otus.Teaching.Concurrency.Import.Core.csproj" />
+      <ProjectReference Include="..\Otus.Teaching.Concurrency.Import.DataAccess\Otus.Teaching.Concurrency.Import.DataAccess.csproj" />
       <ProjectReference Include="..\Otus.Teaching.Concurrency.Import.DataGenerator\Otus.Teaching.Concurrency.Import.DataGenerator.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.28" />
     </ItemGroup>
 
 </Project>
