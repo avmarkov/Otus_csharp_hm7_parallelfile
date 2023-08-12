@@ -33,6 +33,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader
             process.StartInfo.Arguments = "\"" + fileName + "\" " + dataCount.ToString();
             process.Start();
             Console.WriteLine($"Generation in process. process.Id = {process.Id}...");
+            process.WaitForExit();
         }
     }
 }

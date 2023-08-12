@@ -30,7 +30,7 @@ https://gitlab.com/devgrav/Otus.Teaching.Concurrency.Queue/issues/1. Чтобы 
 
 
 ### Решение
-1. Запуск генератора файла через создание процесса, сделать возможность выбора в коде, как запускать генератор, процессом или через вызов метода.
+#### 1. Запуск генератора файла через создание процесса, сделать возможность выбора в коде, как запускать генератор, процессом или через вызов метода.
 
 Сделал класс Generation. С двумя методами GenerationInMethod - генерация файла через вызов метода, GenerationInProccess генерация с помощью процесса:
 ```cs
@@ -62,6 +62,7 @@ public class Generation
         process.StartInfo.Arguments = "\"" + fileName + "\" " + dataCount.ToString();
         process.Start();
         Console.WriteLine($"Generation in process. process.Id = {process.Id}...");
+        process.WaitForExit();
     }
 }
 ```
@@ -79,5 +80,251 @@ if (_genType == "P")
 }      
 ```
 
-2. Распараллеливаем обработку файла по набору диапазонов Id
+#### 2. Распараллеливаем обработку файла по набору диапазонов Id
 
+Сначала десериализовал данные из XML-файла в List. Т.е в классе XmlParser реализовал IDataParser:
+```cs
+public class XmlParser : IDataParser<List<Customer>>
+{
+    public string DataFile { get; set; }
+
+    public XmlParser(string dataFile)
+    {
+        DataFile = dataFile;
+    }
+
+    public List<Customer> Parse()
+    {
+        var result = new List<Customer>();
+
+        var serializer = new XmlSerializer(typeof(CustomersList));
+
+        using (FileStream fileStream = new FileStream(DataFile, FileMode.OpenOrCreate))
+        {
+            CustomersList customersList = serializer.Deserialize(fileStream) as CustomersList;            
+            result = customersList.Customers;
+        }
+        return result;
+    }
+}
+
+[XmlRoot("Customers")]
+public class CustomersList
+{
+    public List<Customer> Customers { get; set; }
+}
+
+```
+
+Затем создал класс MyDataLoader, который реализует интерфейс IDataLoader. В этом классе сделал загрузку данных в БД без потоков и с потоками. 
+Для реализации параллельной загрузки я использовал не напрямую потоки, а Task. Количество Task - threadCount инициализируется в конструкторе класса MyDataLoader. Количество запускаемых Task - 10.
+В случае ошибок записи в БД, я делаю до трех повторов.
+
+```cs
+public class MyDataLoader : IDataLoader
+{
+
+    private string fileName;
+    private string dbConfig;
+    private int threadCount;
+    public MyDataLoader(string fileName, string dbConfig, int threadCount)
+    {
+        this.fileName = fileName;
+        this.dbConfig = dbConfig;
+        this.threadCount = threadCount;
+    }
+    public void LoadData()
+    {
+        var parser = new XmlParser(fileName);
+        var customers = parser.Parse();
+
+        var stopWatch = new Stopwatch();
+
+        Console.WriteLine($"Start data load without thread...");
+        stopWatch.Start();
+        WithoutThread(customers);
+        stopWatch.Stop();
+        Console.WriteLine($"Data load without thread finish after {stopWatch.Elapsed} second.");
+        Console.WriteLine();
+
+        Console.WriteLine($"Start data load with {threadCount} threads...");
+        stopWatch = new Stopwatch();
+        stopWatch.Start();
+        WithThread(customers);
+        stopWatch.Stop();
+        Console.WriteLine($"Data Load with {threadCount} threads finish after {stopWatch.Elapsed} second.");
+        Console.WriteLine();
+    }
+
+    public bool WithoutThread(List<Customer> customerList)
+    {
+        ClearRepository();
+        WriteCustomersToDb(customerList);
+        return true;
+
+    }
+
+    public void ClearRepository()
+    {
+        CustomerRepository repository = new CustomerRepository(new MyDbContext(dbConfig));
+        repository.Clear();
+        repository.SaveChange();
+    }
+
+    public bool WriteCustomersToDb(List<Customer> customerList)
+    {
+        CustomerRepository repository = new CustomerRepository(new MyDbContext(dbConfig));
+
+        foreach (var item in customerList)
+        {
+            int retry = 0;
+            // Повторы, в случае ошибки
+            while (retry <= 3)
+            {
+                try
+                {
+                    repository.AddCustomer(item);
+                    retry = 4;
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Error in repository.AddCustomer. Retry...");
+                    retry++;
+                }
+            }
+
+            retry = 0;
+            while (retry <= 3)
+            {
+                try
+                {
+                    repository.SaveChange();
+                    retry = 4;
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Error in repository.SaveChange. Retry...");
+                    retry++;
+                }
+            }
+        }
+        return true;
+    }
+
+    public async Task<bool> WriteCustomersToDbInTaskAsync(List<Customer> customerList, int threadInd)
+    {
+        Console.WriteLine("Task № " + threadInd.ToString() + " started");
+        var t = Task.Run(() =>
+        {
+            bool res = WriteCustomersToDb(customerList);
+            return res;
+
+        });
+        return await t;
+    }
+
+    public bool WithThread(List<Customer> customerList)
+    {
+        ClearRepository();
+        var taskList = new List<Task<bool>>();
+        int subListLen = customerList.Count / threadCount;
+        for (int i = 0; i < threadCount; i++)
+        {
+            int lastInd;
+
+            if (i == threadCount - 1)
+            {
+                lastInd = customerList.Count;
+            }
+            else
+            {
+                lastInd = (i + 1) * subListLen;
+            }
+            List<Customer> customerSubList = customerList.GetRange(i * subListLen, lastInd - i * subListLen);
+
+            // добавляем и задачу в taskList, она будет запущена внутри WriteCustomersToDbInTaskAsync 
+            taskList.Add(WriteCustomersToDbInTaskAsync(customerSubList, i));
+        }
+
+        try
+        {
+            // ожидание выполнения всех тасок из taskList
+            Task.WaitAll(taskList.ToArray());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
+        return true;
+    }
+
+}
+```
+
+#### 3. Добавить сохранение в реальную БД, в качестве БД выбрать SQL Lite для простоты тестирования и реализации
+
+Для решения задачи я сразу использовал БД Postgres. Классы CustomerRepository и MyDbContext для работы с БД Postgres такие:
+
+```cs
+public class CustomerRepository : ICustomerRepository
+{
+    private MyDbContext _context;
+    protected DbSet<Customer> _dbSet;
+    public CustomerRepository(MyDbContext context)
+    {
+        _context = context;
+        _dbSet = context.Set<Customer>();
+    }
+    public void AddCustomer(Customer customer)
+    {
+        //Add customer to data source
+        if (customer != null)
+        {
+            _dbSet.Add(customer);
+               
+        }
+    }
+
+    public void Clear()
+    {
+        _dbSet.RemoveRange(_dbSet);
+        SaveChange();
+    }
+
+
+    public void SaveChange()
+    {
+        _context.SaveChanges();
+    }
+}
+```
+
+```cs
+public class MyDbContext : DbContext
+{
+    public DbSet<Customer> Customers { get; set; }
+    private string _config;
+
+    public MyDbContext(string config)
+    {
+        _config = config;
+        Database.EnsureCreated();
+    }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseNpgsql(_config);
+    }
+}
+```
+
+DbContext, в случае загрузки в БД параллельно, я создаю отдельно на каждую Task, чтобы избежать проблем с многопоточностью.
+
+4. По желанию вместо SQL Lite проверить работу приложения на полноценной БД, например, MS SQL Server или PostgreSQL.
+Сделано
+
+5. Результат:
+
+<image src="images/result.png" alt="result">
+
+Как видно из результатов загрузка без потоков заняла около 3 мин. Закрузка с 10 Task заняла - 8 сек.

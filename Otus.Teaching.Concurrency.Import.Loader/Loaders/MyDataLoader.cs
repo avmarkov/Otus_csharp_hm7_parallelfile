@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Otus.Teaching.Concurrency.Import.Core.Loaders;
+﻿using Otus.Teaching.Concurrency.Import.Core.Loaders;
 using Otus.Teaching.Concurrency.Import.DataAccess;
 using Otus.Teaching.Concurrency.Import.DataAccess.Parsers;
 using Otus.Teaching.Concurrency.Import.DataAccess.Repositories;
@@ -13,7 +12,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
 {
     public class MyDataLoader : IDataLoader
     {
-        
+
         private string fileName;
         private string dbConfig;
         private int threadCount;
@@ -29,7 +28,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
             var customers = parser.Parse();
 
             var stopWatch = new Stopwatch();
-
+            Console.WriteLine();
             Console.WriteLine($"Start data load without thread...");
             stopWatch.Start();
             WithoutThread(customers);
@@ -63,7 +62,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
 
         public bool WriteCustomersToDb(List<Customer> customerList)
         {
-            CustomerRepository repository = new CustomerRepository(new MyDbContext(dbConfig));           
+            CustomerRepository repository = new CustomerRepository(new MyDbContext(dbConfig));
 
             foreach (var item in customerList)
             {
@@ -72,14 +71,14 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
                 {
                     try
                     {
-                        repository.AddCustomer(item);                       
+                        repository.AddCustomer(item);
                         retry = 4;
                     }
                     catch (Exception)
                     {
                         Console.WriteLine("Error in repository.AddCustomer. Retry...");
                         retry++;
-                    }                    
+                    }
                 }
 
                 retry = 0;
@@ -97,8 +96,6 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
                     }
                 }
             }
-            
-
             return true;
         }
 
@@ -111,14 +108,13 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
                 return res;
 
             });
-
             return await t;
         }
 
         public bool WithThread(List<Customer> customerList)
         {
             ClearRepository();
-             var taskList = new List<Task<bool>>();
+            var taskList = new List<Task<bool>>();
             int subListLen = customerList.Count / threadCount;
             for (int i = 0; i < threadCount; i++)
             {
@@ -132,7 +128,7 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
                 {
                     lastInd = (i + 1) * subListLen;
                 }
-                List<Customer> customerSubList = customerList.GetRange(i * subListLen, lastInd- i * subListLen);
+                List<Customer> customerSubList = customerList.GetRange(i * subListLen, lastInd - i * subListLen);
 
                 // добавляем и задачу в taskList, она будет запущена внутри WriteCustomersToDbInTaskAsync 
                 taskList.Add(WriteCustomersToDbInTaskAsync(customerSubList, i));
@@ -150,7 +146,6 @@ namespace Otus.Teaching.Concurrency.Import.Loader.Loaders
 
             return true;
         }
-
 
     }
 }
